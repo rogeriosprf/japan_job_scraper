@@ -1,0 +1,32 @@
+name: Job Scraper Pipeline
+
+on:
+  schedule:
+    # a cada 3 horas, no minuto 0. Cron do GitHub Actions é sempre UTC.
+    - cron: "0 */3 * * *"
+  workflow_dispatch: {}   # permite rodar manualmente pela aba Actions, útil pra testar
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60   # segurança: aborta se travar (ex: site fora do ar em loop de retry)
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar pipeline (scrape + match + notifica)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 main.py
