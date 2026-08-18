@@ -263,6 +263,22 @@ class JapanDevScraper:
 
 
 
+            # URL da vaga: japan-dev.com como principal, consistente com
+            # as outras fontes (CareerCross/TokyoDev sempre linkam pra
+            # própria página, não pro ATS da empresa). application_url da
+            # Algolia é sempre um link externo (recruitee.com, lever.co,
+            # workable.com, cheio de parâmetro de tracking) — só usamos
+            # como último recurso se não der pra montar a URL própria.
+            job_slug = item.get("slug")
+
+            if company_slug and job_slug:
+                job_url = f"https://japan-dev.com/jobs/{company_slug}/{job_slug}"
+            elif job_slug:
+                job_url = f"https://japan-dev.com/jobs/{job_slug}"
+            else:
+                job_url = item.get("application_url")
+
+
             jobs.append({
 
                 "id":
@@ -354,7 +370,7 @@ class JapanDevScraper:
 
 
                 "job_url":
-                    f"https://japan-dev.com/jobs/{item.get('slug')}",
+                    job_url,
 
 
                 "published_at":
@@ -404,5 +420,5 @@ if __name__ == "__main__":
 
     print(
         f"[JapanDev] Processamento concluído: "
-        f"{len(jobs)} vagas salvas em {scraper.OUTPUT_JSON}"
+        f"{len(jobs)} vagas salvos em {scraper.OUTPUT_JSON}"
     )
