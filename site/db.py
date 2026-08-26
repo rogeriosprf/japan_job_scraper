@@ -44,11 +44,16 @@ def get_stats():
         conn.close()
 
 
-def get_jobs(status: str, limit: int = 20, offset: int = 0):
+def get_jobs(status: str, limit: int = 20, offset: int = 0, order_by: str = "score"):
+    order_clause = {
+        "score": "match_score desc nulls last, first_seen_at desc",
+        "recent": "first_seen_at desc",
+    }.get(order_by, "match_score desc nulls last, first_seen_at desc")
+
     conn = get_connection()
     try:
         with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("""
+            cur.execute(f"""
                 select job_key, source, title, company, location_city, remote_policy,
                        salary_min, salary_max, salary_currency, employment_type,
                        japanese_level, english_level, visa_sponsorship,
@@ -56,13 +61,12 @@ def get_jobs(status: str, limit: int = 20, offset: int = 0):
                        last_seen_at
                 from jobs
                 where status = %s
-                order by match_score desc nulls last, first_seen_at desc
+                order by {order_clause}
                 limit %s offset %s
             """, (status, limit, offset))
             return [dict(r) for r in cur.fetchall()]
     finally:
         conn.close()
-
 
 def count_jobs_by_status(status: str) -> int:
     conn = get_connection()
@@ -73,7 +77,7 @@ def count_jobs_by_status(status: str) -> int:
     finally:
         conn.close()
 
-
+ 
 def update_job_status(job_key: str, new_status: str):
     conn = get_connection()
     try:
